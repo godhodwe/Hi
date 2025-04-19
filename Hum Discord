@@ -1,0 +1,156 @@
+-- 로컬 스크립트: StarterPlayerScripts 또는 StarterGui
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ScreenGui 생성
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FakeLagUI"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = playerGui
+
+-- 열기/닫기 버튼 (화면 우측 상단)
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Name = "ToggleButton"
+toggleBtn.Size = UDim2.new(0, 80, 0, 40)
+toggleBtn.Position = UDim2.new(1, -90, 0, 10)
+toggleBtn.AnchorPoint = Vector2.new(1, 0)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.Text = "열기"
+toggleBtn.TextSize = 18
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.Parent = screenGui
+
+local toggleStroke = Instance.new("UIStroke")
+toggleStroke.Thickness = 1.5
+toggleStroke.Color = Color3.fromRGB(200, 200, 200)
+toggleStroke.Parent = toggleBtn
+
+toggleBtn.MouseEnter:Connect(function()
+	toggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+end)
+toggleBtn.MouseLeave:Connect(function()
+	toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+end)
+
+-- MainFrame 생성
+local frame = Instance.new("Frame")
+frame.Name = "MainFrame"
+frame.Size = UDim2.new(0.26, 0, 0.26, 0) -- 프레임 크기 줄임
+frame.Position = UDim2.new(0.35, 0, 0.34, 0)
+frame.BackgroundTransparency = 0
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Visible = false
+frame.Active = true
+frame.Parent = screenGui
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+Instance.new("UIStroke", frame).Transparency = 0.5
+Instance.new("UIStroke", frame).Color = Color3.fromRGB(255, 255, 255)
+Instance.new("UIGradient", frame).Transparency = NumberSequence.new{
+	NumberSequenceKeypoint.new(0, 0.7),
+	NumberSequenceKeypoint.new(1, 1)
+}
+
+-- 제목
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "Fake Lag UI"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextColor3 = Color3.new(1,1,1)
+title.Parent = frame
+
+-- 버튼 생성 함수
+local function makeButton(name, text, posX, posY, callback)
+	local btn = Instance.new("TextButton")
+	btn.Name = name
+	btn.Size = UDim2.new(0.42, 0, 0.18, 0)
+	btn.Position = UDim2.new(posX, 0, posY, 0)
+	btn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+	btn.TextColor3 = Color3.new(0,0,0)
+	btn.Text = text
+	btn.Font = Enum.Font.Gotham
+	btn.TextSize = 16
+	btn.AutoButtonColor = false
+	btn.TextStrokeTransparency = 1
+	btn.Parent = frame
+
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+	local stroke = Instance.new("UIStroke", btn)
+	stroke.Thickness = 1
+	stroke.Color = Color3.fromRGB(180, 180, 180)
+
+	btn.MouseEnter:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(220, 220, 220) end)
+	btn.MouseLeave:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end)
+	btn.MouseButton1Down:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(200, 200, 200) end)
+	btn.MouseButton1Up:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end)
+
+	btn.MouseButton1Click:Connect(callback)
+	return btn
+end
+
+-- Fake Lag 기능
+local enabled = false
+local interval = 0.07
+local anchoredDuration = 0.4
+
+local function toggleAnchoring()
+	local char = player.Character
+	if char then
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			hrp.Anchored = true
+			task.wait(anchoredDuration)
+			hrp.Anchored = false
+		end
+	end
+end
+
+-- 버튼 배치 (위로 올려서 여백 최소화)
+makeButton("EnableBtn", "Enable", 0.04, 0.65, function() enabled = true end)
+makeButton("DisableBtn", "Disable", 0.54, 0.65, function() enabled = false end)
+
+-- 드래그 기능
+local dragging, dragStart, startPos
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- 열기/닫기 버튼 기능
+toggleBtn.MouseButton1Click:Connect(function()
+	frame.Visible = not frame.Visible
+	toggleBtn.Text = frame.Visible and "닫기" or "열기"
+end)
+
+-- 루프
+task.spawn(function()
+	while true do
+		if enabled then toggleAnchoring() end
+		task.wait(interval)
+	end
+end)
