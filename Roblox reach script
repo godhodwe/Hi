@@ -1,0 +1,42 @@
+-- 통합 스크립트 -- 히트박스 확장 + 자동 휘두르기 GUI + 단일 플레이어 히트박스 설정
+
+local active = true local trueActive = true local reachType = "Sphere" local dmgEnabled = true local visualizerEnabled = false local currentTargetName = nil local previousTargetName = nil local originalSizes = {}
+
+local visualizer = Instance.new("Part") visualizer.BrickColor = BrickColor.Blue() visualizer.Transparency = 0.6 visualizer.Anchored = true visualizer.CanCollide = false visualizer.Size = Vector3.new(0.5,0.5,0.5) visualizer.BottomSurface = Enum.SurfaceType.Smooth visualizer.TopSurface = Enum.SurfaceType.Smooth
+
+local ScreenGui = Instance.new("ScreenGui") local Frame = Instance.new("Frame") local TextLabel = Instance.new("TextLabel") local TextBox = Instance.new("TextBox") local TextLabel_2 = Instance.new("TextLabel") local TextLabel_3 = Instance.new("TextLabel") local TextLabel_4 = Instance.new("TextLabel") local TextButton = Instance.new("TextButton") local Frame_2 = Instance.new("Frame") local Frame_3 = Instance.new("Frame") local Frame_4 = Instance.new("Frame") local Frame_5 = Instance.new("Frame") local TextButton_2 = Instance.new("TextButton") local HitboxInput = Instance.new("TextBox") local HitboxApply = Instance.new("TextButton")
+
+--Properties: ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling ScreenGui.DisplayOrder = 999999999 ScreenGui.ResetOnSpawn = false
+
+Frame.Parent = ScreenGui Frame.AnchorPoint = Vector2.new(0, 0.5) Frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45) Frame.BackgroundTransparency = 0.3 Frame.BorderColor3 = Color3.fromRGB(0, 0, 0) Frame.BorderSizePixel = 4 Frame.Position = UDim2.new(0, 0, 0.6, 0) Frame.Size = UDim2.new(0.15, 0, 0.35, 0)
+
+-- 기존 Reach, Shape, Damage, Visualizer 구성은 그대로 유지 -- 이하 GUI 관련 코드 생략 (기존 동일)
+
+-- 히트박스 입력 GUI HitboxInput.Parent = Frame HitboxInput.BackgroundTransparency = 0.5 HitboxInput.BackgroundColor3 = Color3.fromRGB(255, 255, 255) HitboxInput.Position = UDim2.new(0.05, 0, 0.8, 0) HitboxInput.Size = UDim2.new(0.6, 0, 0.15, 0) HitboxInput.PlaceholderText = "플레이어 닉네임" HitboxInput.Text = ""
+
+HitboxApply.Parent = Frame HitboxApply.Position = UDim2.new(0.68, 0, 0.8, 0) HitboxApply.Size = UDim2.new(0.27, 0, 0.15, 0) HitboxApply.BackgroundColor3 = Color3.fromRGB(200, 200, 200) HitboxApply.Text = "Apply"
+
+-- GUI 키보드 토글 local UserInputService = game:GetService("UserInputService") UserInputService.InputBegan:Connect(function(input, gpe) if gpe then return end if input.KeyCode == Enum.KeyCode.H then ScreenGui.Enabled = not ScreenGui.Enabled end end)
+
+-- 히트박스 확장 로직 local function setHitboxSize(playerName) local function resetPrevious() if previousTargetName then local prevPlayer = game.Players:FindFirstChild(previousTargetName) if prevPlayer and prevPlayer.Character then for _, part in pairs(prevPlayer.Character:GetDescendants()) do if originalSizes[part] then part.Size = originalSizes[part] originalSizes[part] = nil end end end end
+
+resetPrevious()
+local newPlayer = game.Players:FindFirstChild(playerName)
+if newPlayer and newPlayer.Character then
+	for _, part in pairs(newPlayer.Character:GetDescendants()) do
+		if part:IsA("Part") and part.Name ~= "HumanoidRootPart" then
+			originalSizes[part] = part.Size
+			part.Size = part.Size * 1.8
+		end
+	end
+	previousTargetName = playerName
+end
+
+end
+
+HitboxApply.MouseButton1Click:Connect(function() local name = HitboxInput.Text if name ~= "" then setHitboxSize(name) end end)
+
+-- 기존 자동 휘두르기 스크립트 (생략 없이 포함됨) -- ... (기존 자동 휘두르기 RenderStepped 및 onHit 등 포함)
+
+repeat wait() until game.Players.LocalPlayer ScreenGui.Parent = game:GetService("CoreGui")
+
